@@ -106,8 +106,18 @@ async function _seedAssetsData() {
     // 2. Create Stores
     console.log('\n🏪 Creating stores...');
     const store1 = await prisma.store.upsert({
-      where: { id: storeId1 },
-      update: {},
+      where: { username: "happyshop" },
+      update: {
+        userId: user1.id,
+        name: "Happy Shop",
+        description: "At Happy Shop, we believe shopping should be simple, smart, and satisfying. Whether you're hunting for the latest fashion trends, top-notch electronics, home essentials, or unique lifestyle products — we've got it all under one digital roof.",
+        address: "3rd Floor, Happy Shop , New Building, 123 street , c sector , NY, US",
+        status: "approved",
+        isActive: true,
+        logo: imagePaths.happy_store,
+        email: "happyshop@example.com",
+        contact: "+0 1234567890",
+      },
       create: {
         id: storeId1,
         userId: user1.id,
@@ -125,8 +135,18 @@ async function _seedAssetsData() {
     console.log(`  ✅ Store: ${store1.name}`);
 
     const store2 = await prisma.store.upsert({
-      where: { id: storeId2 },
-      update: {},
+      where: { username: "greatstack" },
+      update: {
+        userId: user3.id,
+        name: "GreatStack",
+        description: "GreatStack is the education marketplace where you can buy goodies related to coding and tech",
+        address: "123 Maplewood Drive Springfield, IL 62704 USA",
+        status: "approved",
+        isActive: true,
+        logo: imagePaths.gs_logo,
+        email: "greatstack@example.com",
+        contact: "+0 1234567890",
+      },
       create: {
         id: storeId2,
         userId: user3.id,
@@ -144,8 +164,18 @@ async function _seedAssetsData() {
     console.log(`  ✅ Store: ${store2.name}`);
 
     const store3 = await prisma.store.upsert({
-      where: { id: storeId3 },
-      update: {},
+      where: { username: "happyshop2" },
+      update: {
+        userId: user2.id,
+        name: "Happy Shop",
+        description: "At Happy Shop, we believe shopping should be simple, smart, and satisfying. Whether you're hunting for the latest fashion trends, top-notch electronics, home essentials, or unique lifestyle products — we've got it all under one digital roof.",
+        address: "3rd Floor, Happy Shop , New Building, 123 street , c sector , NY, US",
+        status: "approved",
+        isActive: true,
+        logo: imagePaths.happy_store,
+        email: "happyshop@example.com",
+        contact: "+0 123456789",
+      },
       create: {
         id: storeId3,
         userId: user2.id,
@@ -162,9 +192,120 @@ async function _seedAssetsData() {
     });
     console.log(`  ✅ Store: ${store3.name}`);
 
-    // 3. Create Products
+    // 3. Create Product Attributes and Values
+    console.log('\n🏷️  Creating product attributes...');
+    
+    // Create Size attribute
+    const sizeAttribute = await prisma.productAttribute.upsert({
+      where: { name: 'size' },
+      update: {},
+      create: {
+        name: 'size',
+        displayName: 'Size',
+        description: 'Product size variations',
+        isActive: true,
+      },
+    });
+    console.log(`  ✅ Attribute: ${sizeAttribute.displayName}`);
+
+    // Create Color attribute
+    const colorAttribute = await prisma.productAttribute.upsert({
+      where: { name: 'color' },
+      update: {},
+      create: {
+        name: 'color',
+        displayName: 'Color',
+        description: 'Product color variations',
+        isActive: true,
+      },
+    });
+    console.log(`  ✅ Attribute: ${colorAttribute.displayName}`);
+
+    // Create Material attribute
+    const materialAttribute = await prisma.productAttribute.upsert({
+      where: { name: 'material' },
+      update: {},
+      create: {
+        name: 'material',
+        displayName: 'Material',
+        description: 'Product material variations',
+        isActive: true,
+      },
+    });
+    console.log(`  ✅ Attribute: ${materialAttribute.displayName}`);
+
+    // Create Size values
+    const sizeValues = ['Small', 'Medium', 'Large', 'XL'];
+    const createdSizeValues = [];
+    for (const size of sizeValues) {
+      const value = await prisma.productAttributeValue.upsert({
+        where: {
+          attributeId_value: {
+            attributeId: sizeAttribute.id,
+            value: size,
+          },
+        },
+        update: {},
+        create: {
+          attributeId: sizeAttribute.id,
+          value: size,
+          displayValue: size,
+          isActive: true,
+        },
+      });
+      createdSizeValues.push(value);
+      console.log(`  ✅ Size Value: ${value.value}`);
+    }
+
+    // Create Color values
+    const colorValues = ['Red', 'Blue', 'Black', 'White', 'Green'];
+    const createdColorValues = [];
+    for (const color of colorValues) {
+      const value = await prisma.productAttributeValue.upsert({
+        where: {
+          attributeId_value: {
+            attributeId: colorAttribute.id,
+            value: color,
+          },
+        },
+        update: {},
+        create: {
+          attributeId: colorAttribute.id,
+          value: color,
+          displayValue: color,
+          isActive: true,
+        },
+      });
+      createdColorValues.push(value);
+      console.log(`  ✅ Color Value: ${value.value}`);
+    }
+
+    // Create Material values
+    const materialValues = ['Cotton', 'Polyester', 'Leather', 'Plastic'];
+    const createdMaterialValues = [];
+    for (const material of materialValues) {
+      const value = await prisma.productAttributeValue.upsert({
+        where: {
+          attributeId_value: {
+            attributeId: materialAttribute.id,
+            value: material,
+          },
+        },
+        update: {},
+        create: {
+          attributeId: materialAttribute.id,
+          value: material,
+          displayValue: material,
+          isActive: true,
+        },
+      });
+      createdMaterialValues.push(value);
+      console.log(`  ✅ Material Value: ${value.value}`);
+    }
+
+    // 4. Create Products
     console.log('\n📦 Creating products...');
-    const productIds = Array.from({ length: 12 }, () => uuidv4());
+    const productIds = Array.from({ length: 15 }, () => uuidv4()); // Increased to 15 to include complex products
     // Products with prices in UGX (Ugandan Shillings)
     // Using sensible UGX values for demo data
     const products = [
@@ -299,19 +440,221 @@ async function _seedAssetsData() {
         category: "Cleaner",
         storeId: store1.id,
         inStock: true,
+        productType: 'SIMPLE',
       },
+      // Complex products with variants
+      {
+        id: productIds[12],
+        name: "Premium T-Shirt",
+        description: "High-quality premium t-shirt available in multiple sizes and colors. Made from premium cotton for ultimate comfort.",
+        mrp: 148000,  // ~$40
+        price: 111000,  // ~$30
+        images: [imagePaths.product_img1, imagePaths.product_img2],
+        category: "Clothing",
+        storeId: store1.id,
+        inStock: true,
+        productType: 'COMPLEX',
+      },
+      {
+        id: productIds[13],
+        name: "Designer Backpack",
+        description: "Stylish designer backpack with multiple size and color options. Perfect for work, travel, or school.",
+        mrp: 370000,  // ~$100
+        price: 259000,  // ~$70
+        images: [imagePaths.product_img3, imagePaths.product_img4],
+        category: "Bags",
+        storeId: store1.id,
+        inStock: true,
+        productType: 'COMPLEX',
+      },
+      {
+        id: productIds[14],
+        name: "Leather Wallet",
+        description: "Premium leather wallet available in different colors and materials. Handcrafted with attention to detail.",
+        mrp: 222000,  // ~$60
+        price: 148000,  // ~$40
+        images: [imagePaths.product_img5, imagePaths.product_img6],
+        category: "Accessories",
+        storeId: store1.id,
+        inStock: true,
+        productType: 'COMPLEX',
+        },
     ];
 
-    for (const productData of products) {
+    // Get default currency for products
+    const defaultCurrency = await prisma.currency.findFirst({
+      where: { isActive: true },
+      orderBy: { code: 'asc' },
+    });
+
+    // Create simple products (all products that are not explicitly marked as COMPLEX)
+    const simpleProducts = products.filter(p => p.productType !== 'COMPLEX');
+    for (const productData of simpleProducts) {
       await prisma.product.upsert({
         where: { id: productData.id },
-        update: productData,
-        create: productData,
+        update: {
+          ...productData,
+          productType: 'SIMPLE',
+          currencyId: defaultCurrency?.id || null,
+        },
+        create: {
+          ...productData,
+          productType: 'SIMPLE',
+          currencyId: defaultCurrency?.id || null,
+        },
       });
-      console.log(`  ✅ Product: ${productData.name}`);
+      console.log(`  ✅ Product (Simple): ${productData.name}`);
     }
 
-    // 4. Create Address
+    // Create complex products with variants
+    const complexProducts = products.filter(p => p.productType === 'COMPLEX');
+    
+    for (const productData of complexProducts) {
+      // Create product with attributes and variants
+      const product = await prisma.product.upsert({
+        where: { id: productData.id },
+        update: {
+          name: productData.name,
+          description: productData.description,
+          mrp: productData.mrp,
+          price: productData.price,
+          images: productData.images,
+          category: productData.category,
+          storeId: productData.storeId,
+          inStock: productData.inStock,
+          productType: 'COMPLEX',
+          currencyId: defaultCurrency?.id || null,
+        },
+        create: {
+          name: productData.name,
+          description: productData.description,
+          mrp: productData.mrp,
+          price: productData.price,
+          images: productData.images,
+          category: productData.category,
+          storeId: productData.storeId,
+          inStock: productData.inStock,
+          productType: 'COMPLEX',
+          currencyId: defaultCurrency?.id || null,
+          // Link attributes based on product
+          attributes: {
+            create: productData.name.includes('T-Shirt') || productData.name.includes('Backpack')
+              ? [
+                  { attributeId: sizeAttribute.id },
+                  { attributeId: colorAttribute.id },
+                ]
+              : [
+                  { attributeId: colorAttribute.id },
+                  { attributeId: materialAttribute.id },
+                ],
+          },
+        },
+        include: {
+          attributes: {
+            include: {
+              attribute: {
+                include: {
+                  values: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Generate variants based on product type
+      let variants = [];
+      
+      if (productData.name.includes('T-Shirt')) {
+        // T-Shirt: Size x Color combinations
+        const sizes = createdSizeValues.slice(0, 3); // Small, Medium, Large
+        const colors = createdColorValues.slice(0, 3); // Red, Blue, Black
+        
+        for (const size of sizes) {
+          for (const color of colors) {
+            const basePrice = productData.price;
+            const sizeMultiplier = size.value === 'Small' ? 0.9 : size.value === 'Medium' ? 1.0 : 1.1;
+            const colorMultiplier = color.value === 'Black' ? 1.05 : 1.0;
+            
+            variants.push({
+              mrp: productData.mrp * sizeMultiplier * colorMultiplier,
+              price: basePrice * sizeMultiplier * colorMultiplier,
+              stock: Math.floor(Math.random() * 50) + 10,
+              inStock: true,
+              sku: `TSHIRT-${size.value.substring(0, 1)}-${color.value.substring(0, 1)}`,
+              images: [],
+              attributeValues: [size.id, color.id],
+            });
+          }
+        }
+      } else if (productData.name.includes('Backpack')) {
+        // Backpack: Size x Color combinations
+        const sizes = createdSizeValues.slice(0, 3); // Small, Medium, Large
+        const colors = createdColorValues.slice(0, 4); // Red, Blue, Black, White
+        
+        for (const size of sizes) {
+          for (const color of colors) {
+            const basePrice = productData.price;
+            const sizeMultiplier = size.value === 'Small' ? 0.85 : size.value === 'Medium' ? 1.0 : 1.15;
+            
+            variants.push({
+              mrp: productData.mrp * sizeMultiplier,
+              price: basePrice * sizeMultiplier,
+              stock: Math.floor(Math.random() * 30) + 5,
+              inStock: true,
+              sku: `BAG-${size.value.substring(0, 1)}-${color.value.substring(0, 1)}`,
+              images: [],
+              attributeValues: [size.id, color.id],
+            });
+          }
+        }
+      } else if (productData.name.includes('Wallet')) {
+        // Wallet: Color x Material combinations
+        const colors = createdColorValues.slice(0, 4); // Red, Blue, Black, White
+        const materials = createdMaterialValues.slice(2, 4); // Leather, Plastic
+        
+        for (const color of colors) {
+          for (const material of materials) {
+            const basePrice = productData.price;
+            const materialMultiplier = material.value === 'Leather' ? 1.2 : 1.0;
+            
+            variants.push({
+              mrp: productData.mrp * materialMultiplier,
+              price: basePrice * materialMultiplier,
+              stock: Math.floor(Math.random() * 40) + 10,
+              inStock: true,
+              sku: `WALLET-${color.value.substring(0, 1)}-${material.value.substring(0, 1)}`,
+              images: [],
+              attributeValues: [color.id, material.id],
+            });
+          }
+        }
+      }
+
+      // Create variants
+      for (const variantData of variants) {
+        await prisma.productVariant.create({
+          data: {
+            productId: product.id,
+            sku: variantData.sku,
+            mrp: variantData.mrp,
+            price: variantData.price,
+            stock: variantData.stock,
+            inStock: variantData.inStock,
+            images: variantData.images,
+            attributes: {
+              create: variantData.attributeValues.map((valueId) => ({
+                valueId,
+              })),
+            },
+          },
+        });
+      }
+      
+      console.log(`  ✅ Product (Complex): ${productData.name} with ${variants.length} variants`);
+    }
+
+    // 5. Create Address
     console.log('\n📍 Creating address...');
     const address = await prisma.address.upsert({
       where: { id: addressId },
@@ -331,7 +674,7 @@ async function _seedAssetsData() {
     });
     console.log(`  ✅ Address: ${address.name}`);
 
-    // 5. Create Coupons
+    // 6. Create Coupons
     console.log('\n🎫 Creating coupons...');
     const coupons = [
       { code: "NEW20", description: "20% Off for New Users", discount: 20, forNewUser: true, forMember: false, isPublic: false, expiresAt: new Date("2026-12-31T00:00:00.000Z") },
@@ -350,7 +693,7 @@ async function _seedAssetsData() {
       console.log(`  ✅ Coupon: ${couponData.code}`);
     }
 
-    // 6. Create Orders (need to create orders before ratings since ratings require orderId)
+    // 7. Create Orders (need to create orders before ratings since ratings require orderId)
     console.log('\n📋 Creating orders...');
     // Orders with prices in UGX
     const order1 = await prisma.order.upsert({
@@ -402,7 +745,7 @@ async function _seedAssetsData() {
     });
     console.log(`  ✅ Order: ${order2.id}`);
 
-    // 7. Create Ratings (ratings require orderId, so we use the orders we just created)
+    // 8. Create Ratings (ratings require orderId, so we use the orders we just created)
     console.log('\n⭐ Creating ratings...');
     const ratingIds = Array.from({ length: 6 }, () => uuidv4());
     const ratings = [

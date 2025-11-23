@@ -20,7 +20,9 @@
     "db:seed-categories": "tsx scripts/seed-categories.ts",
     "db:update-products-currency": "tsx scripts/update-products-currency.ts",
     "db:setup-check": "tsx scripts/setup-onboarding.ts",
-    "db:setup-onboarding": "tsx scripts/setup-onboarding.ts"
+    "db:setup-onboarding": "tsx scripts/setup-onboarding.ts",
+    "db:migrate": "tsx scripts/migrate-all.ts",
+    "db:migrate-all": "tsx scripts/migrate-all.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.4",
