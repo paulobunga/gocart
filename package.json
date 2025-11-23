@@ -9,7 +9,12 @@
     "lint": "next lint",
     "db:test": "tsx scripts/test-database.ts",
     "db:studio": "prisma studio",
-    "db:seed": "tsx scripts/seed-roles-permissions.ts"
+    "db:generate": "prisma generate && node scripts/fix-prisma-imports.js",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed-roles": "tsx scripts/seed-roles-permissions.ts",
+    "db:seed-assets": "tsx scripts/seed-assets-data.ts",
+    "db:seed-currency": "tsx scripts/seed-currency.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
@@ -25,11 +30,13 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "react-redux": "^9.2.0",
-    "recharts": "^3.1.2"
+    "recharts": "^3.1.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "24.10.1",
+    "@types/uuid": "^10.0.0",
     "prisma": "^7.0.0",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",

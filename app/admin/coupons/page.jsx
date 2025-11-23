@@ -3,8 +3,6 @@ import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import toast from "react-hot-toast"
 import { DeleteIcon } from "lucide-react"
-import { couponDummyData } from "@/assets/assets"
-
 export default function AdminCoupons() {
 
     const [coupons, setCoupons] = useState([])
@@ -20,7 +18,15 @@ export default function AdminCoupons() {
     })
 
     const fetchCoupons = async () => {
-        setCoupons(couponDummyData)
+        try {
+            const response = await fetch('/api/coupons');
+            const result = await response.json();
+            if (result.success) {
+                setCoupons(result.data);
+            }
+        } catch (error) {
+            console.error('Error fetching coupons:', error);
+        }
     }
 
     const handleAddCoupon = async (e) => {

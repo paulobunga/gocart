@@ -216,3 +216,24 @@ model UserRole {
     @@index([userId])
     @@index([roleId])
 }
+
+// Currency Management
+model Currency {
+    id          String   @id @default(cuid())
+    code        String   @unique // e.g., "USD", "UGX", "EUR"
+    name        String   // e.g., "US Dollar", "Ugandan Shilling", "Euro"
+    symbol      String   // e.g., "$", "USh", "€"
+    exchangeRate Float   @default(1.0) // Exchange rate relative to base currency
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+}
+
+// Site Settings
+model Setting {
+    id        String   @id @default(cuid())
+    key       String   @unique // e.g., "default_currency"
+    value     String   // JSON string or plain string
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}

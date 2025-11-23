@@ -3,18 +3,33 @@ import { useEffect, useState } from "react"
 import { toast } from "react-hot-toast"
 import Image from "next/image"
 import Loading from "@/components/Loading"
-import { productDummyData } from "@/assets/assets"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 export default function StoreManageProducts() {
 
-    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$'
+    const { formatPrice } = useCurrency()
 
     const [loading, setLoading] = useState(true)
     const [products, setProducts] = useState([])
 
     const fetchProducts = async () => {
-        setProducts(productDummyData)
-        setLoading(false)
+        try {
+            // Get storeId - you may need to adjust this based on your auth/store context
+            const storesResponse = await fetch('/api/stores');
+            const storesResult = await storesResponse.json();
+            if (storesResult.success && storesResult.data.length > 0) {
+                const storeId = storesResult.data[0].id;
+                const response = await fetch(`/api/products?storeId=${storeId}`);
+                const result = await response.json();
+                if (result.success) {
+                    setProducts(result.data);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const toggleStock = async (productId) => {
@@ -52,8 +67,8 @@ export default function StoreManageProducts() {
                                 </div>
                             </td>
                             <td className="px-4 py-3 max-w-md text-slate-600 hidden md:table-cell truncate">{product.description}</td>
-                            <td className="px-4 py-3 hidden md:table-cell">{currency} {product.mrp.toLocaleString()}</td>
-                            <td className="px-4 py-3">{currency} {product.price.toLocaleString()}</td>
+                            <td className="px-4 py-3 hidden md:table-cell">{formatPrice(product.mrp)}</td>
+                            <td className="px-4 py-3">{formatPrice(product.price)}</td>
                             <td className="px-4 py-3 text-center">
                                 <label className="relative inline-flex items-center cursor-pointer text-gray-900 gap-3">
                                     <input type="checkbox" className="sr-only peer" onChange={() => toast.promise(toggleStock(product.id), { loading: "Updating data..." })} checked={product.inStock} />

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { prisma } from '../lib/prisma';
 
-async function seedRolesAndPermissions() {
+async function _seedRolesAndPermissions() {
   try {
     console.log('🌱 Seeding roles and permissions...');
 
@@ -129,23 +129,34 @@ async function seedRolesAndPermissions() {
       }
     }
 
-    console.log('\n✨ Seeding completed successfully!');
+    console.log('\n✨ Roles and permissions seeding completed successfully!');
   } catch (error) {
     console.error('❌ Error seeding roles and permissions:', error);
     throw error;
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
-// Run the seed function
-seedRolesAndPermissions()
-  .then(() => {
-    console.log('✅ Seed script completed');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('❌ Seed script failed:', error);
-    process.exit(1);
-  });
+// Export function without disconnect (for use in unified seed)
+export async function seedRolesAndPermissions() {
+  return _seedRolesAndPermissions();
+}
+
+// Allow running this file directly via tsx
+// This will only execute when the file is run directly, not when imported
+const isMainModule = process.argv[1]?.includes('seed-roles-permissions.ts');
+
+if (isMainModule) {
+  (async () => {
+    try {
+      await _seedRolesAndPermissions();
+      console.log('✅ Seed script completed');
+    } catch (error) {
+      console.error('❌ Seed script failed:', error);
+      process.exit(1);
+    } finally {
+      await prisma.$disconnect();
+      process.exit(0);
+    }
+  })();
+}
 

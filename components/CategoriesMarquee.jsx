@@ -1,6 +1,25 @@
-import { categories } from "@/assets/assets";
+'use client'
+import { useEffect, useState } from "react";
 
 const CategoriesMarquee = () => {
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('/api/categories');
+                const result = await response.json();
+                if (result.success) {
+                    setCategories(result.data);
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    if (categories.length === 0) return null;
 
     return (
         <div className="overflow-hidden w-full relative max-w-7xl mx-auto select-none group sm:my-20">

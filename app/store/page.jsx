@@ -1,14 +1,14 @@
 'use client'
-import { dummyStoreDashboardData } from "@/assets/assets"
 import Loading from "@/components/Loading"
 import { CircleDollarSignIcon, ShoppingBasketIcon, StarIcon, TagsIcon } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { useCurrency } from "@/lib/contexts/CurrencyContext"
 
 export default function Dashboard() {
 
-    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$'
+    const { formatPrice } = useCurrency()
 
     const router = useRouter()
 
@@ -22,14 +22,35 @@ export default function Dashboard() {
 
     const dashboardCardsData = [
         { title: 'Total Products', value: dashboardData.totalProducts, icon: ShoppingBasketIcon },
-        { title: 'Total Earnings', value: currency + dashboardData.totalEarnings, icon: CircleDollarSignIcon },
+        { title: 'Total Earnings', value: formatPrice(dashboardData.totalEarnings), icon: CircleDollarSignIcon },
         { title: 'Total Orders', value: dashboardData.totalOrders, icon: TagsIcon },
         { title: 'Total Ratings', value: dashboardData.ratings.length, icon: StarIcon },
     ]
 
     const fetchDashboardData = async () => {
-        setDashboardData(dummyStoreDashboardData)
-        setLoading(false)
+        try {
+            // Get storeId from the store - you may need to adjust this based on your auth/store context
+            // For now, using the first store as an example
+            const storesResponse = await fetch('/api/stores');
+            const storesResult = await storesResponse.json();
+            if (storesResult.success && storesResult.data.length > 0) {
+                const storeId = storesResult.data[0].id;
+                const response = await fetch(`/api/store/dashboard?storeId=${storeId}`);
+                const result = await response.json();
+                if (result.success) {
+                    setDashboardData({
+                        totalProducts: result.data.totalProducts,
+                        totalEarnings: result.data.totalEarnings,
+                        totalOrders: result.data.totalOrders,
+                        ratings: result.data.ratings,
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => {

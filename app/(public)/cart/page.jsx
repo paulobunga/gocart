@@ -7,10 +7,11 @@ import { Trash2Icon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useCurrency } from "@/lib/contexts/CurrencyContext";
 
 export default function Cart() {
 
-    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
+    const { formatPrice } = useCurrency();
     
     const { cartItems } = useSelector(state => state.cart);
     const products = useSelector(state => state.product.list);
@@ -75,13 +76,13 @@ export default function Cart() {
                                             <div>
                                                 <p className="max-sm:text-sm">{item.name}</p>
                                                 <p className="text-xs text-slate-500">{item.category}</p>
-                                                <p>{currency}{item.price}</p>
+                                                <p>{formatPrice(item.price)}</p>
                                             </div>
                                         </td>
                                         <td className="text-center">
                                             <Counter productId={item.id} />
                                         </td>
-                                        <td className="text-center">{currency}{(item.price * item.quantity).toLocaleString()}</td>
+                                        <td className="text-center">{formatPrice(item.price * item.quantity)}</td>
                                         <td className="text-center max-md:hidden">
                                             <button onClick={() => handleDeleteItemFromCart(item.id)} className=" text-red-500 hover:bg-red-50 p-2.5 rounded-full active:scale-95 transition-all">
                                                 <Trash2Icon size={18} />

@@ -5,8 +5,6 @@ import Link from "next/link"
 import { ArrowRightIcon } from "lucide-react"
 import SellerNavbar from "./StoreNavbar"
 import SellerSidebar from "./StoreSidebar"
-import { dummyStoreData } from "@/assets/assets"
-
 const StoreLayout = ({ children }) => {
 
 
@@ -15,9 +13,19 @@ const StoreLayout = ({ children }) => {
     const [storeInfo, setStoreInfo] = useState(null)
 
     const fetchIsSeller = async () => {
-        setIsSeller(true)
-        setStoreInfo(dummyStoreData)
-        setLoading(false)
+        try {
+            // Get the first store as an example - you may need to adjust this based on your auth/store context
+            const response = await fetch('/api/stores');
+            const result = await response.json();
+            if (result.success && result.data.length > 0) {
+                setIsSeller(true);
+                setStoreInfo(result.data[0]);
+            }
+        } catch (error) {
+            console.error('Error fetching store data:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => {

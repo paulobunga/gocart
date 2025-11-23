@@ -2,14 +2,26 @@
 import PageTitle from "@/components/PageTitle"
 import { useEffect, useState } from "react";
 import OrderItem from "@/components/OrderItem";
-import { orderDummyData } from "@/assets/assets";
-
 export default function Orders() {
 
     const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setOrders(orderDummyData)
+        const fetchOrders = async () => {
+            try {
+                const response = await fetch('/api/orders');
+                const result = await response.json();
+                if (result.success) {
+                    setOrders(result.data);
+                }
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrders();
     }, []);
 
     return (

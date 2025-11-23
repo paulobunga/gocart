@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import CurrencySwitcher from "./CurrencySwitcher";
 
 const Navbar = () => {
 
@@ -40,6 +41,8 @@ const Navbar = () => {
                             <Search size={18} className="text-slate-600" />
                             <input className="w-full bg-transparent outline-none placeholder-slate-600" type="text" placeholder="Search products" value={search} onChange={(e) => setSearch(e.target.value)} required />
                         </form>
+
+                        <CurrencySwitcher />
 
                         <Link href="/cart" className="relative flex items-center gap-2 text-slate-600">
                             <ShoppingCart size={18} />

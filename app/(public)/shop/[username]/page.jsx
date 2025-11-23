@@ -5,8 +5,6 @@ import { useEffect, useState } from "react"
 import { MailIcon, MapPinIcon } from "lucide-react"
 import Loading from "@/components/Loading"
 import Image from "next/image"
-import { dummyStoreData, productDummyData } from "@/assets/assets"
-
 export default function StoreShop() {
 
     const { username } = useParams()
@@ -15,9 +13,26 @@ export default function StoreShop() {
     const [loading, setLoading] = useState(true)
 
     const fetchStoreData = async () => {
-        setStoreInfo(dummyStoreData)
-        setProducts(productDummyData)
-        setLoading(false)
+        try {
+            // Fetch store by username
+            const storeResponse = await fetch(`/api/stores?username=${username}`);
+            const storeResult = await storeResponse.json();
+            if (storeResult.success && storeResult.data.length > 0) {
+                const store = storeResult.data[0];
+                setStoreInfo(store);
+                
+                // Fetch products for this store
+                const productsResponse = await fetch(`/api/products?storeId=${store.id}`);
+                const productsResult = await productsResponse.json();
+                if (productsResult.success) {
+                    setProducts(productsResult.data);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching store data:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => {
