@@ -12,16 +12,29 @@ export default function Product() {
     const products = useSelector(state => state.product.list);
 
     const fetchProduct = async () => {
-        const product = products.find((product) => product.id === productId);
+        // First try to find in Redux store
+        let product = products.find((product) => product.id === productId);
+        
+        // If not found, fetch directly from API
+        if (!product) {
+            try {
+                const response = await fetch(`/api/products`);
+                const result = await response.json();
+                if (result.success) {
+                    product = result.data.find((p) => p.id === productId);
+                }
+            } catch (error) {
+                console.error('Error fetching product:', error);
+            }
+        }
+        
         setProduct(product);
     }
 
     useEffect(() => {
-        if (products.length > 0) {
-            fetchProduct()
-        }
-        scrollTo(0, 0)
-    }, [productId,products]);
+        fetchProduct();
+        scrollTo(0, 0);
+    }, [productId, products]);
 
     return (
         <div className="mx-6">

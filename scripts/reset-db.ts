@@ -21,6 +21,12 @@ async function resetDatabase() {
     console.log('  Deleting products...');
     await prisma.product.deleteMany();
     
+    console.log('  Deleting vendor subscriptions...');
+    await prisma.vendorSubscription.deleteMany();
+    
+    console.log('  Deleting subscription plans...');
+    await prisma.subscriptionPlan.deleteMany();
+    
     console.log('  Deleting stores...');
     await prisma.store.deleteMany();
     
@@ -41,6 +47,9 @@ async function resetDatabase() {
     
     console.log('  Deleting users...');
     await prisma.user.deleteMany();
+    
+    console.log('  Deleting languages...');
+    await prisma.language.deleteMany();
     
     console.log('  Deleting currencies...');
     await prisma.currency.deleteMany();

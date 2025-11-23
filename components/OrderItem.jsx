@@ -24,7 +24,7 @@ const OrderItem = ({ order }) => {
                                 <div className="w-20 aspect-square bg-slate-100 flex items-center justify-center rounded-md">
                                     <Image
                                         className="h-14 w-auto"
-                                        src={item.product.images[0]}
+                                        src={item.variant?.images?.[0] || item.product.images?.[0] || ''}
                                         alt="product_img"
                                         width={50}
                                         height={50}
@@ -32,6 +32,16 @@ const OrderItem = ({ order }) => {
                                 </div>
                                 <div className="flex flex-col justify-center text-sm">
                                     <p className="font-medium text-slate-600 text-base">{item.product.name}</p>
+                                    {item.variant && (
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            {item.variant.attributes?.map((attr, idx) => (
+                                                <span key={idx}>
+                                                    {attr.value.attribute.displayName}: {attr.value.displayValue || attr.value.value}
+                                                    {idx < item.variant.attributes.length - 1 && ', '}
+                                                </span>
+                                            ))}
+                                        </p>
+                                    )}
                                     <p>{formatPrice(item.price)} Qty : {item.quantity} </p>
                                     <p className="mb-1">{new Date(order.createdAt).toDateString()}</p>
                                     <div>

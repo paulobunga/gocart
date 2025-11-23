@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { hasPermission, hasRole } from './permissions';
 
 /**
@@ -83,21 +84,15 @@ export async function requireAnyRole(
 }
 
 /**
- * Extract user ID from request
- * This is a placeholder - you should implement your actual auth logic here
- * For example, if using NextAuth, you'd get the session here
+ * Extract user ID from request using Clerk
  */
-export function getUserIdFromRequest(request: NextRequest): string | null {
-  // TODO: Implement your actual authentication logic
-  // Example with NextAuth:
-  // const session = await getServerSession(request);
-  // return session?.user?.id || null;
-  
-  // For now, you can get it from headers or query params
-  // This is just a placeholder
-  const userId = request.headers.get('x-user-id') || 
-                 request.nextUrl.searchParams.get('userId');
-  
-  return userId;
+export async function getUserIdFromRequest(request: NextRequest): Promise<string | null> {
+  try {
+    const { userId } = await auth();
+    return userId;
+  } catch (error) {
+    console.error('Error getting user ID from Clerk:', error);
+    return null;
+  }
 }
 

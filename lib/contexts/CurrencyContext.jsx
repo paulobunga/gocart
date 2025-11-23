@@ -48,8 +48,7 @@ export function CurrencyProvider({ children }) {
       if (result.success) {
         setCurrency(result.data)
         toast.success(`Currency switched to ${result.data.code}`)
-        // Refresh the page to update all currency displays
-        window.location.reload()
+        // Currency state update will trigger re-render of all components using useCurrency()
       } else {
         toast.error(result.error || 'Failed to switch currency')
       }

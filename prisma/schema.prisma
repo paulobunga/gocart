@@ -23,24 +23,121 @@ model User {
     userRoles   UserRole[]
 }
 
+enum ProductType {
+    SIMPLE
+    COMPLEX
+}
+
 // Required for creating a Product: name, description, mrp, price, images, category, storeId
 model Product {
-    id          String   @id @default(cuid())
+    id          String      @id @default(cuid())
     name        String
     description String
-    mrp         Float
-    price       Float
-    images      String[]
+    mrp         Float       // Maximum Retail Price in the product's currency (for simple products or base price for complex)
+    price       Float       // Selling Price in the product's currency (for simple products or base price for complex)
+    currencyId  String?     // Currency this product is priced in (nullable for migration)
+    images      String[]    // Base product images
     category    String
-    inStock     Boolean  @default(true)
+    inStock     Boolean     @default(true) // For simple products, or overall stock status for complex
     storeId     String
+    productType ProductType @default(SIMPLE)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    // Relations
+    currency    Currency? @relation(fields: [currencyId], references: [id])
+    store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+    orderItems  OrderItem[]
+    rating      Rating[]
+    variants    ProductVariant[]
+    attributes  ProductAttributeMapping[]
+}
+
+// Product Attributes (e.g., Size, Color, Material)
+model ProductAttribute {
+    id          String   @id @default(cuid())
+    name        String   @unique // e.g., "Size", "Color", "Material"
+    displayName String   // e.g., "Size", "Color", "Material"
+    description String?
+    isActive    Boolean  @default(true)
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
     // Relations
-    store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+    values      ProductAttributeValue[]
+    mappings    ProductAttributeMapping[]
+}
+
+// Attribute Values (e.g., Small, Medium, Large for Size)
+model ProductAttributeValue {
+    id          String   @id @default(cuid())
+    attributeId String
+    value       String   // e.g., "Small", "Red", "Cotton"
+    displayValue String? // Optional display value
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Relations
+    attribute ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+    variants  ProductVariantAttribute[]
+
+    @@unique([attributeId, value])
+    @@index([attributeId])
+}
+
+// Product to Attribute Mapping (which attributes are used by a product)
+model ProductAttributeMapping {
+    id          String   @id @default(cuid())
+    productId   String
+    attributeId String
+    createdAt   DateTime @default(now())
+
+    // Relations
+    product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+    attribute ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+    @@unique([productId, attributeId])
+    @@index([productId])
+    @@index([attributeId])
+}
+
+// Product Variants (combinations of attributes)
+model ProductVariant {
+    id          String   @id @default(cuid())
+    productId   String
+    sku         String?  // Stock Keeping Unit (optional)
+    mrp         Float    // Variant-specific MRP
+    price       Float    // Variant-specific price
+    stock       Int      @default(0)
+    inStock     Boolean  @default(true)
+    images      String[] // Variant-specific images (optional)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Relations
+    product   Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
+    attributes ProductVariantAttribute[]
     orderItems OrderItem[]
-    rating     Rating[]
+
+    @@index([productId])
+    @@index([sku])
+}
+
+// Variant to Attribute Value mapping (which attribute values make up this variant)
+model ProductVariantAttribute {
+    id        String   @id @default(cuid())
+    variantId String
+    valueId   String
+    createdAt DateTime @default(now())
+
+    // Relations
+    variant ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+    value   ProductAttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+    @@unique([variantId, valueId])
+    @@index([variantId])
+    @@index([valueId])
 }
 
 enum OrderStatus {
@@ -52,7 +149,9 @@ enum OrderStatus {
 
 enum PaymentMethod {
     COD
-    STRIPE
+    PAYPAL
+    IOTEC_MTN
+    IOTEC_AIRTEL
 }
 
 // Required for creating an Order: total, userId, storeId, addressId, isPaid, paymentMethod, isCouponUsed, coupon (JSON), orderItems (nested)
@@ -79,16 +178,22 @@ model Order {
 
 // Required for creating an OrderItem: orderId, productId, quantity, price
 model OrderItem {
+    id        String   @id @default(cuid())
     orderId   String
     productId String
+    variantId String? // Optional: for complex products with variants
     quantity  Int
     price     Float
 
     // Relations
-    order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    product Product @relation(fields: [productId], references: [id])
+    order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    product Product        @relation(fields: [productId], references: [id])
+    variant ProductVariant? @relation(fields: [variantId], references: [id])
 
-    @@id([orderId, productId])
+    @@unique([orderId, productId, variantId])
+    @@index([orderId])
+    @@index([productId])
+    @@index([variantId])
 }
 
 // Required for creating a Rating: rating, review, userId, productId
@@ -140,6 +245,43 @@ model Coupon {
     createdAt   DateTime @default(now())
 }
 
+enum SubscriptionPlanType {
+    FREE
+    PREMIUM
+    BUSINESS
+}
+
+enum SubscriptionBilling {
+    MONTHLY
+    ANNUAL
+}
+
+enum PaymentProvider {
+    PAYPAL
+    IOTEC_MTN
+    IOTEC_AIRTEL
+}
+
+// Subscription Plan Configuration
+model SubscriptionPlan {
+    id                String              @id @default(cuid())
+    type              SubscriptionPlanType @unique
+    name              String
+    monthlyPrice      Float               @default(0) // Price in the plan's currency
+    annualPrice       Float               @default(0) // Price in the plan's currency
+    currencyId        String              // Currency this plan is priced in
+    maxProducts       Int                 // -1 for unlimited
+    maxImagesPerProduct Int
+    features          String[]             // Array of feature descriptions
+    isActive          Boolean             @default(true)
+    displayOrder      Int                 @default(0) // For sorting
+    createdAt         DateTime            @default(now())
+    updatedAt         DateTime            @updatedAt
+
+    currency          Currency            @relation(fields: [currencyId], references: [id])
+    subscriptions     VendorSubscription[]
+}
+
 // Required for creating a Store: userId, name, username, email, contact, logo, description, address (optional: , status, isActive)
 model Store {
     id          String   @id @default(cuid())
@@ -156,9 +298,30 @@ model Store {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    Product Product[]
-    Order   Order[]
-    user    User      @relation(fields: [userId], references: [id])
+    Product         Product[]
+    Order           Order[]
+    user            User            @relation(fields: [userId], references: [id])
+    subscription    VendorSubscription?
+}
+
+model VendorSubscription {
+    id                String            @id @default(cuid())
+    storeId           String            @unique
+    planType          SubscriptionPlanType
+    planId            String?           // Reference to SubscriptionPlan (optional for backward compatibility)
+    billing           SubscriptionBilling
+    maxProducts       Int
+    maxImagesPerProduct Int
+    isActive          Boolean           @default(true)
+    startDate         DateTime          @default(now())
+    endDate           DateTime
+    paymentProvider   PaymentProvider?
+    paymentTransactionId String?
+    createdAt         DateTime          @default(now())
+    updatedAt         DateTime          @updatedAt
+
+    store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+    plan  SubscriptionPlan? @relation(fields: [planId], references: [id])
 }
 
 // Roles and Permissions System
@@ -227,13 +390,50 @@ model Currency {
     isActive    Boolean  @default(true)
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
+
+    subscriptionPlans SubscriptionPlan[]
+    products          Product[]
+}
+
+// Language Management
+model Language {
+    id          String   @id @default(cuid())
+    code        String   @unique // e.g., "en-US", "ar", "fr"
+    name        String   // e.g., "English (US)", "Arabic", "French"
+    nativeName  String   // Native name of the language
+    isRTL       Boolean  @default(false) // Right-to-left layout
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 }
 
 // Site Settings
 model Setting {
     id        String   @id @default(cuid())
-    key       String   @unique // e.g., "default_currency"
+    key       String   @unique // e.g., "default_currency", "default_language"
     value     String   // JSON string or plain string
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+// Category Management with Nested Support
+model Category {
+    id          String   @id @default(cuid())
+    name        String
+    description String?
+    slug        String   @unique
+    image       String?  // Full-size image path
+    thumbnail   String?  // Thumbnail image path
+    parentId    String?  // For nested categories
+    isActive    Boolean  @default(true)
+    displayOrder Int     @default(0) // For sorting
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // Self-referential relation for nested categories
+    parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+    children Category[] @relation("CategoryTree")
+
+    @@index([parentId])
+    @@index([slug])
 }

@@ -3,6 +3,9 @@ import { prisma } from '../lib/prisma';
 import { seedRolesAndPermissions } from './seed-roles-permissions';
 import { seedAssetsData } from './seed-assets-data';
 import { seedCurrency } from './seed-currency';
+import { seedLanguage } from './seed-language';
+import { seedSubscriptionPlans } from './seed-subscription-plans';
+import { seedCategories } from './seed-categories';
 
 async function seed() {
   try {
@@ -16,6 +19,21 @@ async function seed() {
     
     // Seed currency data
     await seedCurrency();
+    
+    console.log('\n' + '='.repeat(50) + '\n');
+    
+    // Seed language data
+    await seedLanguage();
+    
+    console.log('\n' + '='.repeat(50) + '\n');
+    
+    // Seed subscription plans
+    await seedSubscriptionPlans();
+    
+    console.log('\n' + '='.repeat(50) + '\n');
+    
+    // Seed categories
+    await seedCategories();
     
     console.log('\n' + '='.repeat(50) + '\n');
     

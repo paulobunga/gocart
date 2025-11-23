@@ -14,9 +14,16 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed-roles": "tsx scripts/seed-roles-permissions.ts",
     "db:seed-assets": "tsx scripts/seed-assets-data.ts",
-    "db:seed-currency": "tsx scripts/seed-currency.ts"
+    "db:seed-currency": "tsx scripts/seed-currency.ts",
+    "db:seed-language": "tsx scripts/seed-language.ts",
+    "db:seed-plans": "tsx scripts/seed-subscription-plans.ts",
+    "db:seed-categories": "tsx scripts/seed-categories.ts",
+    "db:update-products-currency": "tsx scripts/update-products-currency.ts",
+    "db:setup-check": "tsx scripts/setup-onboarding.ts",
+    "db:setup-onboarding": "tsx scripts/setup-onboarding.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.35.4",
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
     "@prisma/extension-accelerate": "^3.0.0",
@@ -31,6 +38,8 @@
     "react-hot-toast": "^2.5.2",
     "react-redux": "^9.2.0",
     "recharts": "^3.1.2",
+    "sharp": "^0.34.5",
+    "svix": "^1.81.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

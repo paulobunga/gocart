@@ -20,3 +20,40 @@
 .no-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+/* Fix Clerk's excessive border-radius */
+.cl-rootBox,
+.cl-card,
+.cl-main,
+.cl-form {
+    border-radius: 0 !important;
+}
+
+.cl-formButtonPrimary,
+.cl-socialButtonsBlockButton,
+.cl-formFieldInput,
+.cl-otpCodeFieldInput,
+.cl-button {
+    border-radius: 9999px !important;
+}
+
+/* Reduce shadows and make borders subtle */
+.cl-rootBox,
+.cl-card,
+.cl-main,
+.cl-form,
+.cl-formButtonPrimary,
+.cl-socialButtonsBlockButton,
+.cl-formFieldInput,
+.cl-button {
+    box-shadow: none !important;
+    border-color: rgba(226, 232, 240, 0.5) !important;
+}
+
+.cl-socialButtonsBlockButton {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.cl-formFieldInput:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+}

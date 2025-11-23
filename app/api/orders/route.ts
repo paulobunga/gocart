@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/orders - Get all orders
 export async function GET(request: NextRequest) {
   try {
+    const { userId: clerkUserId } = await auth();
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const storeId = searchParams.get('storeId');
 
     let where: any = {};
 
+    // If no userId is provided in query params, use the authenticated user's ID
+    // This ensures customers only see their own orders
     if (userId) {
       where.userId = userId;
+    } else if (clerkUserId) {
+      // For authenticated users without userId param, use their Clerk ID
+      where.userId = clerkUserId;
     }
 
     if (storeId) {
@@ -33,6 +40,19 @@ export async function GET(request: NextRequest) {
             product: {
               include: {
                 store: true,
+              },
+            },
+            variant: {
+              include: {
+                attributes: {
+                  include: {
+                    value: {
+                      include: {
+                        attribute: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -60,6 +80,7 @@ export async function GET(request: NextRequest) {
       orderItems: order.orderItems.map((item) => ({
         orderId: item.orderId,
         productId: item.productId,
+        variantId: item.variantId,
         quantity: item.quantity,
         price: item.price,
         product: {
@@ -79,6 +100,28 @@ export async function GET(request: NextRequest) {
             logo: item.product.store.logo,
           },
         },
+        variant: item.variant ? {
+          id: item.variant.id,
+          sku: item.variant.sku,
+          mrp: item.variant.mrp,
+          price: item.variant.price,
+          stock: item.variant.stock,
+          inStock: item.variant.inStock,
+          images: item.variant.images,
+          attributes: item.variant.attributes?.map((va) => ({
+            id: va.id,
+            value: {
+              id: va.value.id,
+              value: va.value.value,
+              displayValue: va.value.displayValue,
+              attribute: {
+                id: va.value.attribute.id,
+                name: va.value.attribute.name,
+                displayName: va.value.attribute.displayName,
+              },
+            },
+          })) || [],
+        } : null,
       })),
       address: order.address,
       user: {

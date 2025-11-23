@@ -25,20 +25,39 @@ export default function Cart() {
         setTotalPrice(0);
         const cartArray = [];
         for (const [key, value] of Object.entries(cartItems)) {
-            const product = products.find(product => product.id === key);
+            // Parse cart key: could be "productId" or "productId:variantId"
+            const [productId, variantId] = key.split(':');
+            const product = products.find(product => product.id === productId);
             if (product) {
+                let variant = null;
+                let itemPrice = product.price;
+                let itemImages = product.images || [];
+                
+                // If variantId exists, find the variant
+                if (variantId && product.variants) {
+                    variant = product.variants.find(v => v.id === variantId);
+                    if (variant) {
+                        itemPrice = variant.price;
+                        itemImages = variant.images?.length > 0 ? variant.images : product.images || [];
+                    }
+                }
+                
                 cartArray.push({
                     ...product,
+                    variantId: variantId || null,
+                    variant: variant,
                     quantity: value,
+                    price: itemPrice,
+                    displayImages: itemImages,
                 });
-                setTotalPrice(prev => prev + product.price * value);
+                setTotalPrice(prev => prev + itemPrice * value);
             }
         }
         setCartArray(cartArray);
     }
 
-    const handleDeleteItemFromCart = (productId) => {
-        dispatch(deleteItemFromCart({ productId }))
+    const handleDeleteItemFromCart = (productId, variantId) => {
+        dispatch(deleteItemFromCart({ productId, variantId }))
     }
 
     useEffect(() => {
@@ -71,20 +90,30 @@ export default function Cart() {
                                     <tr key={index} className="space-x-2">
                                         <td className="flex gap-3 my-4">
                                             <div className="flex gap-3 items-center justify-center bg-slate-100 size-18 rounded-md">
-                                                <Image src={item.images[0]} className="h-14 w-auto" alt="" width={45} height={45} />
+                                                <Image src={item.displayImages?.[0] || item.images?.[0] || ''} className="h-14 w-auto" alt="" width={45} height={45} />
                                             </div>
                                             <div>
                                                 <p className="max-sm:text-sm">{item.name}</p>
+                                                {item.variant && (
+                                                    <p className="text-xs text-slate-600 font-medium mt-1">
+                                                        {item.variant.attributes?.map((attr, idx) => (
+                                                            <span key={idx}>
+                                                                {attr.value.attribute.displayName}: {attr.value.displayValue || attr.value.value}
+                                                                {idx < item.variant.attributes.length - 1 && ', '}
+                                                            </span>
+                                                        ))}
+                                                    </p>
+                                                )}
                                                 <p className="text-xs text-slate-500">{item.category}</p>
                                                 <p>{formatPrice(item.price)}</p>
                                             </div>
                                         </td>
                                         <td className="text-center">
-                                            <Counter productId={item.id} />
+                                            <Counter productId={item.id} variantId={item.variantId} />
                                         </td>
                                         <td className="text-center">{formatPrice(item.price * item.quantity)}</td>
                                         <td className="text-center max-md:hidden">
-                                            <button onClick={() => handleDeleteItemFromCart(item.id)} className=" text-red-500 hover:bg-red-50 p-2.5 rounded-full active:scale-95 transition-all">
+                                            <button onClick={() => handleDeleteItemFromCart(item.id, item.variantId)} className=" text-red-500 hover:bg-red-50 p-2.5 rounded-full active:scale-95 transition-all">
                                                 <Trash2Icon size={18} />
                                             </button>
                                         </td>

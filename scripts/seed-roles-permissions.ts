@@ -20,6 +20,11 @@ async function _seedRolesAndPermissions() {
       { name: 'admin.orders.view', resource: 'orders', action: 'read', description: 'View all orders' },
       { name: 'admin.coupons.manage', resource: 'coupons', action: 'manage', description: 'Manage all coupons' },
       { name: 'admin.coupons.view', resource: 'coupons', action: 'read', description: 'View all coupons' },
+      { name: 'admin.categories.manage', resource: 'categories', action: 'manage', description: 'Manage all categories' },
+      { name: 'admin.categories.create', resource: 'categories', action: 'create', description: 'Create categories' },
+      { name: 'admin.categories.update', resource: 'categories', action: 'update', description: 'Update categories' },
+      { name: 'admin.categories.delete', resource: 'categories', action: 'delete', description: 'Delete categories' },
+      { name: 'admin.categories.view', resource: 'categories', action: 'read', description: 'View all categories' },
       { name: 'admin.roles.manage', resource: 'roles', action: 'manage', description: 'Manage roles and permissions' },
       { name: 'admin.roles.view', resource: 'roles', action: 'read', description: 'View roles and permissions' },
 
