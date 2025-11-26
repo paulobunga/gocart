@@ -80,13 +80,7 @@ const Navbar = () => {
                         </Link>
 
                         {mounted && isSignedIn ? (
-                            <div className="flex items-center gap-2">
-                                <Link href="/profile">
-                                    {/* User's full name */}
-                                    <p className="text-slate-600 hover:text-slate-800 transition">My Account</p>
-                                </Link>
-                                <UserMenu size="md" />
-                            </div>
+                            <UserMenu size="md" showLabel={true} />
                         ) : (
                             <Link href="/sign-in">
                                 <button className="px-8 py-2 bg-indigo-500 hover:bg-indigo-600 transition text-white rounded-full hover:scale-105 active:scale-95">

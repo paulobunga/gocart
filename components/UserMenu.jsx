@@ -6,7 +6,7 @@ import { ChevronDownIcon, User, LogOut, Settings, Store, Shield, ShoppingBag, Pa
 import Link from 'next/link'
 import Image from 'next/image'
 
-const UserMenu = ({ size = 'md' }) => {
+const UserMenu = ({ size = 'md', showLabel = false }) => {
   const { user } = useUser()
   const { signOut } = useClerk()
   const router = useRouter()
@@ -116,7 +116,7 @@ const UserMenu = ({ size = 'md' }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 rounded-full transition-all hover:opacity-80 ${avatarSize}`}
+        className={`flex items-center gap-2 transition-all hover:opacity-80 ${showLabel ? 'px-2 py-1 rounded-md hover:bg-slate-50' : 'rounded-full'}`}
         aria-label="User menu"
       >
         {user.imageUrl ? (
