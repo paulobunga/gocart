@@ -2,8 +2,12 @@
 import { XIcon } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import { addAddress } from "@/lib/features/address/addressSlice"
 
-const AddressModal = ({ setShowAddressModal }) => {
+const AddressModal = ({ setShowAddressModal, onAddressAdded }) => {
+
+    const dispatch = useDispatch()
 
     const [address, setAddress] = useState({
         name: '',
@@ -26,7 +30,36 @@ const AddressModal = ({ setShowAddressModal }) => {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        setShowAddressModal(false)
+        try {
+            const response = await fetch('/api/addresses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(address)
+            })
+
+            const data = await response.json()
+
+            if (!data.success) {
+                toast.error(data.error || 'Failed to save address')
+                return
+            }
+
+            // Add address to Redux store
+            dispatch(addAddress(data.data))
+
+            // Notify parent component (for refreshing and auto-selection)
+            if (onAddressAdded) {
+                onAddressAdded(data.data, data.isFirstAddress)
+            }
+
+            toast.success('Address saved successfully!')
+            setShowAddressModal(false)
+        } catch (error) {
+            console.error('Error saving address:', error)
+            toast.error('Failed to save address. Please try again.')
+        }
     }
 
     return (
@@ -41,7 +74,7 @@ const AddressModal = ({ setShowAddressModal }) => {
                     <input name="state" onChange={handleAddressChange} value={address.state} className="p-2 px-4 outline-none border border-slate-200 rounded w-full" type="text" placeholder="State" required />
                 </div>
                 <div className="flex gap-4">
-                    <input name="zip" onChange={handleAddressChange} value={address.zip} className="p-2 px-4 outline-none border border-slate-200 rounded w-full" type="number" placeholder="Zip code" required />
+                    <input name="zip" onChange={handleAddressChange} value={address.zip} className="p-2 px-4 outline-none border border-slate-200 rounded w-full" type="text" placeholder="Zip code" required />
                     <input name="country" onChange={handleAddressChange} value={address.country} className="p-2 px-4 outline-none border border-slate-200 rounded w-full" type="text" placeholder="Country" required />
                 </div>
                 <input name="phone" onChange={handleAddressChange} value={address.phone} className="p-2 px-4 outline-none border border-slate-200 rounded w-full" type="text" placeholder="Phone" required />

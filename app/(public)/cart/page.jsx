@@ -13,7 +13,26 @@ export default function Cart() {
 
     const { formatPrice } = useCurrency();
     
-    const { cartItems } = useSelector(state => state.cart);
+    const cartState = useSelector(state => state.cart);
+    console.log('[Cart] cartState from Redux:', {
+        cartState,
+        cartItemsType: typeof cartState?.cartItems,
+        cartItemsIsArray: Array.isArray(cartState?.cartItems),
+        cartItemsValue: cartState?.cartItems
+    });
+    
+    // Ensure cartItems is always an object, not a number or other type
+    const cartItems = (cartState && typeof cartState.cartItems === 'object' && !Array.isArray(cartState.cartItems)) 
+        ? cartState.cartItems 
+        : {};
+    
+    console.log('[Cart] cartItems after validation:', {
+        cartItems,
+        type: typeof cartItems,
+        isArray: Array.isArray(cartItems),
+        keys: Object.keys(cartItems)
+    });
+    
     const products = useSelector(state => state.product.list);
 
     const dispatch = useDispatch();
@@ -22,8 +41,26 @@ export default function Cart() {
     const [totalPrice, setTotalPrice] = useState(0);
 
     const createCartArray = () => {
+        console.log('[Cart] createCartArray called with:', {
+            cartItems,
+            cartItemsType: typeof cartItems,
+            productsLength: products.length
+        });
+        
         setTotalPrice(0);
         const cartArray = [];
+        // Ensure cartItems is an object before iterating
+        if (!cartItems || typeof cartItems !== 'object' || Array.isArray(cartItems)) {
+            console.warn('[Cart] createCartArray: cartItems is invalid, setting empty array', {
+                cartItems,
+                type: typeof cartItems,
+                isArray: Array.isArray(cartItems)
+            });
+            setCartArray([]);
+            return;
+        }
+        
+        console.log('[Cart] createCartArray: iterating over cartItems entries');
         for (const [key, value] of Object.entries(cartItems)) {
             // Parse cart key: could be "productId" or "productId:variantId"
             const [productId, variantId] = key.split(':');
@@ -53,6 +90,13 @@ export default function Cart() {
                 setTotalPrice(prev => prev + itemPrice * value);
             }
         }
+        
+        console.log('[Cart] createCartArray: finished, cartArray:', {
+            length: cartArray.length,
+            cartArray,
+            totalPrice: cartArray.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        });
+        
         setCartArray(cartArray);
     }
 
@@ -66,7 +110,39 @@ export default function Cart() {
         }
     }, [cartItems, products]);
 
-    return cartArray.length > 0 ? (
+    // Ensure cartArray is always an array - defensive check
+    const safeCartArray = (() => {
+        console.log('[Cart] Validating cartArray before render:', {
+            cartArray,
+            type: typeof cartArray,
+            isArray: Array.isArray(cartArray),
+            constructor: cartArray?.constructor?.name
+        });
+        
+        if (Array.isArray(cartArray)) {
+            console.log('[Cart] safeCartArray is valid, length:', cartArray.length);
+            return cartArray;
+        }
+        console.error('[Cart] ERROR: cartArray is not an array!', {
+            type: typeof cartArray,
+            value: cartArray,
+            constructor: cartArray?.constructor?.name
+        });
+        return [];
+    })();
+
+    // Ensure totalPrice is a valid number
+    const safeTotalPrice = typeof totalPrice === 'number' && !isNaN(totalPrice) ? totalPrice : 0;
+    
+    console.log('[Cart] About to render OrderSummary with:', {
+        safeTotalPrice,
+        safeCartArray,
+        safeCartArrayType: typeof safeCartArray,
+        safeCartArrayIsArray: Array.isArray(safeCartArray),
+        safeCartArrayLength: Array.isArray(safeCartArray) ? safeCartArray.length : 'N/A'
+    });
+
+    return safeCartArray.length > 0 ? (
         <div className="min-h-screen mx-6 text-slate-800">
 
             <div className="max-w-7xl mx-auto ">
@@ -86,7 +162,7 @@ export default function Cart() {
                         </thead>
                         <tbody>
                             {
-                                cartArray.map((item, index) => (
+                                safeCartArray.map((item, index) => (
                                     <tr key={index} className="space-x-2">
                                         <td className="flex gap-3 my-4">
                                             <div className="flex gap-3 items-center justify-center bg-slate-100 size-18 rounded-md">
@@ -94,11 +170,11 @@ export default function Cart() {
                                             </div>
                                             <div>
                                                 <p className="max-sm:text-sm">{item.name}</p>
-                                                {item.variant && (
+                                                {item.variant && Array.isArray(item.variant.attributes) && item.variant.attributes.length > 0 && (
                                                     <p className="text-xs text-slate-600 font-medium mt-1">
-                                                        {item.variant.attributes?.map((attr, idx) => (
+                                                        {item.variant.attributes.map((attr, idx) => (
                                                             <span key={idx}>
-                                                                {attr.value.attribute.displayName}: {attr.value.displayValue || attr.value.value}
+                                                                {attr.value?.attribute?.displayName}: {attr.value?.displayValue || attr.value?.value}
                                                                 {idx < item.variant.attributes.length - 1 && ', '}
                                                             </span>
                                                         ))}
@@ -122,7 +198,7 @@ export default function Cart() {
                             }
                         </tbody>
                     </table>
-                    <OrderSummary totalPrice={totalPrice} items={cartArray} />
+                    <OrderSummary totalPrice={safeTotalPrice} items={safeCartArray} />
                 </div>
             </div>
         </div>

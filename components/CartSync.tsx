@@ -69,8 +69,8 @@ export default function CartSync() {
     // Only save if cart has changed
     if (cartString === lastSavedCartRef.current) return
 
-    // Debounce: wait 1 second after last change before saving
-    const timeoutId = setTimeout(async () => {
+    // Function to save cart with retry logic
+    const saveCart = async (retryCount = 0) => {
       try {
         const response = await fetch('/api/cart', {
           method: 'POST',
@@ -83,11 +83,33 @@ export default function CartSync() {
         if (response.ok) {
           lastSavedCartRef.current = cartString
         } else {
-          console.error('Failed to save cart to database')
+          // Get error details from response
+          const errorData = await response.json().catch(() => ({}))
+          
+          // If user not found (404), they might not be synced yet
+          // Retry after a delay to allow UserSync to complete
+          if (response.status === 404 && retryCount < 3) {
+            console.log(`User not found in database, retrying cart save... (${retryCount + 1}/3)`)
+            setTimeout(() => {
+              saveCart(retryCount + 1)
+            }, 2000 * (retryCount + 1)) // Exponential backoff: 2s, 4s, 6s
+            return
+          }
+          
+          console.error('Failed to save cart to database:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData.error || 'Unknown error'
+          })
         }
       } catch (error) {
         console.error('Error saving cart to database:', error)
       }
+    }
+
+    // Debounce: wait 1 second after last change before saving
+    const timeoutId = setTimeout(() => {
+      saveCart()
     }, 1000)
 
     return () => clearTimeout(timeoutId)

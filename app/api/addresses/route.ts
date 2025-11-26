@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/cart - Get user's cart from database
+ * GET /api/addresses - Get all addresses for the authenticated user
  */
 export async function GET(request: NextRequest) {
   try {
@@ -16,38 +16,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { cart: true }
+    const addresses = await prisma.address.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
     })
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Ensure cart is an object
-    const cartItems = typeof user.cart === 'object' && user.cart !== null 
-      ? user.cart 
-      : {}
 
     return NextResponse.json({
       success: true,
-      cartItems
+      data: addresses
     })
   } catch (error: any) {
-    console.error('Error fetching cart:', error)
+    console.error('Error fetching addresses:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch cart' },
+      { success: false, error: error.message || 'Failed to fetch addresses' },
       { status: 500 }
     )
   }
 }
 
 /**
- * POST /api/cart - Save user's cart to database
+ * POST /api/addresses - Create a new address for the authenticated user
  */
 export async function POST(request: NextRequest) {
   try {
@@ -61,11 +49,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { cartItems } = body
+    const { name, email, street, city, state, zip, country, phone } = body
 
-    if (!cartItems || typeof cartItems !== 'object') {
+    // Validate required fields
+    if (!name || !email || !street || !city || !state || !zip || !country || !phone) {
       return NextResponse.json(
-        { success: false, error: 'Invalid cart data' },
+        { success: false, error: 'All address fields are required' },
         { status: 400 }
       )
     }
@@ -82,20 +71,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update user's cart in database
-    await prisma.user.update({
-      where: { id: userId },
-      data: { cart: cartItems }
+    // Check if this is the first address for the user
+    const existingAddresses = await prisma.address.findMany({
+      where: { userId }
+    })
+
+    const isFirstAddress = existingAddresses.length === 0
+
+    // Create the address
+    const address = await prisma.address.create({
+      data: {
+        userId,
+        name,
+        email,
+        street,
+        city,
+        state,
+        zip,
+        country,
+        phone
+      }
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Cart saved successfully'
+      data: address,
+      isFirstAddress // Indicate if this is the first address (for auto-selection)
     })
   } catch (error: any) {
-    console.error('Error saving cart:', error)
+    console.error('Error creating address:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to save cart' },
+      { success: false, error: error.message || 'Failed to create address' },
       { status: 500 }
     )
   }

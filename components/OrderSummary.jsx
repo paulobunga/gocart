@@ -1,27 +1,103 @@
 import { PlusIcon, SquarePenIcon, XIcon, Check } from 'lucide-react';
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import AddressModal from './AddressModal';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { setAddresses } from '@/lib/features/address/addressSlice';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { useCurrency } from '@/lib/contexts/CurrencyContext';
+import { useUser } from '@clerk/nextjs';
 
-const OrderSummary = ({ totalPrice, items }) => {
+const OrderSummary = ({ totalPrice, items: rawItems = [] }) => {
+    // Normalize items IMMEDIATELY before any other code runs
+    // This prevents any iteration errors from happening
+    // Even if default parameter is set, we still need to validate in case a non-array is explicitly passed
+    const items = (() => {
+        try {
+            if (Array.isArray(rawItems)) {
+                return rawItems;
+            }
+            // If items is not an array, log and return empty array
+            console.error('[OrderSummary] CRITICAL: items prop is not an array!', {
+                type: typeof rawItems,
+                value: rawItems,
+                constructor: rawItems?.constructor?.name,
+                rawItems,
+                stack: new Error().stack
+            });
+            return [];
+        } catch (error) {
+            console.error('[OrderSummary] Error normalizing items:', error);
+            return [];
+        }
+    })();
+    
+    // Log when component receives props
+    console.log('[OrderSummary] Component rendered with props:', {
+        totalPrice,
+        rawItemsType: typeof rawItems,
+        rawItemsValue: rawItems,
+        itemsType: typeof items,
+        itemsIsArray: Array.isArray(items),
+        itemsValue: items,
+        itemsLength: Array.isArray(items) ? items.length : 'N/A'
+    });
 
     const { formatPrice, currency } = useCurrency();
 
     const router = useRouter();
+    const dispatch = useDispatch();
+    const { user, isLoaded } = useUser();
 
     const addressList = useSelector(state => state.address.list);
+
+    // Use normalized items array
+    const itemsArray = items;
 
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [selectedAddress, setSelectedAddress] = useState(null);
     const [showAddressModal, setShowAddressModal] = useState(false);
+
+    // Fetch addresses on mount
+    useEffect(() => {
+        if (isLoaded && user) {
+            fetchAddresses();
+        }
+    }, [isLoaded, user]);
+
+    // Auto-select first address if none is selected and addresses exist
+    useEffect(() => {
+        if (addressList && addressList.length > 0 && !selectedAddress) {
+            setSelectedAddress(addressList[0]);
+        }
+    }, [addressList]);
+
+    const fetchAddresses = async () => {
+        try {
+            const response = await fetch('/api/addresses');
+            const data = await response.json();
+            
+            if (data.success) {
+                dispatch(setAddresses(data.data));
+            }
+        } catch (error) {
+            console.error('Error fetching addresses:', error);
+        }
+    };
+
+    const handleAddressAdded = async (newAddress, isFirstAddress) => {
+        // Refresh addresses from server to ensure consistency
+        await fetchAddresses();
+        // Auto-select the newly added address if it's the first one (no default exists)
+        if (isFirstAddress) {
+            setSelectedAddress(newAddress);
+        }
+    };
     const [couponCodeInput, setCouponCodeInput] = useState('');
     const [coupon, setCoupon] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [processingPayment, setProcessingPayment] = useState(false);
-    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+    const [paymentStatus, setPaymentStatus] = useState('idle');
     const [paymentMessage, setPaymentMessage] = useState('');
 
     const handleCouponCode = async (event) => {
@@ -54,7 +130,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        items: items.map(item => ({
+                        items: itemsArray.map(item => ({
                             productId: item.id,
                             variantId: item.variantId || null,
                             quantity: item.quantity,
@@ -65,7 +141,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                         addressId: selectedAddress.id,
                         paymentMethod: 'COD',
                         coupon: coupon || null,
-                        storeId: items[0]?.storeId
+                        storeId: itemsArray[0]?.storeId
                     })
                 });
 
@@ -178,7 +254,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        items: items.map(item => ({
+                        items: itemsArray.map(item => ({
                             productId: item.id,
                             variantId: item.variantId || null,
                             quantity: item.quantity,
@@ -190,7 +266,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                         paymentMethod: paymentMethod,
                         paymentTransactionId: paymentData.transactionId,
                         coupon: coupon || null,
-                        storeId: items[0]?.storeId
+                        storeId: itemsArray[0]?.storeId
                     })
                 });
 
@@ -239,7 +315,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                         currency: currency?.code || 'USD',
                         // Store order data for callback
                         orderData: {
-                            items: items.map(item => ({
+                            items: itemsArray.map(item => ({
                                 productId: item.id,
                                 quantity: item.quantity,
                                 price: item.price,
@@ -248,7 +324,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                             total: finalTotal,
                             addressId: selectedAddress.id,
                             coupon: coupon || null,
-                            storeId: items[0]?.storeId
+                            storeId: itemsArray[0]?.storeId
                         }
                     })
                 });
@@ -267,7 +343,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                     setPaymentMessage('Redirecting to PayPal...');
                     // Store order data in sessionStorage for callback
                     sessionStorage.setItem('pendingOrder', JSON.stringify({
-                        items: items.map(item => ({
+                        items: itemsArray.map(item => ({
                             productId: item.id,
                             quantity: item.quantity,
                             price: item.price,
@@ -276,7 +352,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                         total: finalTotal,
                         addressId: selectedAddress.id,
                         coupon: coupon || null,
-                        storeId: items[0]?.storeId
+                        storeId: itemsArray[0]?.storeId
                     }));
                     
                     setTimeout(() => {
@@ -367,7 +443,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                     ) : (
                         <div>
                             {
-                                addressList.length > 0 && (
+                                    Array.isArray(addressList) && addressList.length > 0 && (
                                     <select className='border border-slate-400 p-2 w-full my-3 outline-none rounded' onChange={(e) => setSelectedAddress(addressList[e.target.value])} >
                                         <option value="">Select Address</option>
                                         {
@@ -425,7 +501,7 @@ const OrderSummary = ({ totalPrice, items }) => {
                 {processingPayment ? 'Processing Payment...' : 'Place Order'}
             </button>
 
-            {showAddressModal && <AddressModal setShowAddressModal={setShowAddressModal} />}
+            {showAddressModal && <AddressModal setShowAddressModal={setShowAddressModal} onAddressAdded={handleAddressAdded} />}
 
         </div>
     )

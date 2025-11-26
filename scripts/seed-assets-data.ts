@@ -510,7 +510,12 @@ async function _seedAssetsData() {
     const complexProducts = products.filter(p => p.productType === 'COMPLEX');
     
     for (const productData of complexProducts) {
-      // Create product with attributes and variants
+      // Determine which attributes this product needs
+      const requiredAttributeIds = productData.name.includes('T-Shirt') || productData.name.includes('Backpack')
+        ? [sizeAttribute.id, colorAttribute.id]
+        : [colorAttribute.id, materialAttribute.id];
+
+      // Create or update product
       const product = await prisma.product.upsert({
         where: { id: productData.id },
         update: {
@@ -538,15 +543,9 @@ async function _seedAssetsData() {
           currencyId: defaultCurrency?.id || null,
           // Link attributes based on product
           attributes: {
-            create: productData.name.includes('T-Shirt') || productData.name.includes('Backpack')
-              ? [
-                  { attributeId: sizeAttribute.id },
-                  { attributeId: colorAttribute.id },
-                ]
-              : [
-                  { attributeId: colorAttribute.id },
-                  { attributeId: materialAttribute.id },
-                ],
+            create: requiredAttributeIds.map(attributeId => ({
+              attributeId,
+            })),
           },
         },
         include: {
@@ -561,6 +560,24 @@ async function _seedAssetsData() {
           },
         },
       });
+
+      // Ensure attributes are linked (in case product was updated)
+      const existingAttributes = await prisma.productAttributeMapping.findMany({
+        where: { productId: product.id },
+      });
+
+      const existingAttributeIds = existingAttributes.map(a => a.attributeId);
+      const missingAttributeIds = requiredAttributeIds.filter(id => !existingAttributeIds.includes(id));
+
+      if (missingAttributeIds.length > 0) {
+        await prisma.productAttributeMapping.createMany({
+          data: missingAttributeIds.map(attributeId => ({
+            productId: product.id,
+            attributeId,
+          })),
+          skipDuplicates: true,
+        });
+      }
 
       // Generate variants based on product type
       let variants = [];
@@ -630,6 +647,11 @@ async function _seedAssetsData() {
           }
         }
       }
+
+      // Delete existing variants if any (for re-seeding)
+      await prisma.productVariant.deleteMany({
+        where: { productId: product.id },
+      });
 
       // Create variants
       for (const variantData of variants) {

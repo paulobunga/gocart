@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
         addressId,
         isPaid,
         paymentMethod: paymentMethod as any, // Type assertion for enum
+        paymentTransactionId: paymentTransactionId || null,
         isCouponUsed: !!coupon,
         coupon: coupon || {},
         orderItems: {
